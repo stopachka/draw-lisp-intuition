@@ -168,13 +168,19 @@ function onMessageV6(instruction) {
       variables[name] = v;
     },
   };
-  const makeFn = (args, body, variables) => {
-    return (...argValues) => {
-      const argDefs = args.reduce((res, k, idx) => {
-        res[k] = argValues[idx];
-        return res;
-      }, {});
-      return parseInstruction(body, { ...variables, ...argDefs });
+  const mapArgsWithValues = (args, values) => {
+    return args.reduce((res, k, idx) => {
+      res[k] = values[idx];
+      return res;
+    }, {});
+  };
+  const parseFnInstruction = (args, body, oldVariables) => {
+    return (...values) => {
+      const newVariables = {
+        ...oldVariables,
+        ...mapArgsWithValues(args, values),
+      };
+      return parseInstruction(body, newVariables);
     };
   };
   const parseInstruction = (ins, variables) => {
@@ -188,7 +194,7 @@ function onMessageV6(instruction) {
     }
     const [fName, ...args] = ins;
     if (fName == "fn") {
-      return makeFn(...args, variables);
+      return parseFnInstruction(...args, variables);
     }
     const fn = fns[fName] || variables[fName];
     return fn(...args.map((arg) => parseInstruction(arg, variables)));
@@ -215,9 +221,12 @@ eval(
       ],
     ],
     ["drawTriangle", { x: 0, y: 0 }, { x: 3, y: 3 }, { x: 6, y: 0 }, "blue"],
-    ["drawTriangle", { x: 6, y: 6 }, { x: 10, y: 10 }, { x: 6, y: 16 }, "purple"],
+    [
+      "drawTriangle",
+      { x: 6, y: 6 },
+      { x: 10, y: 10 },
+      { x: 6, y: 16 },
+      "purple",
+    ],
   ])
 );
-
-["defn", "drawTriangle", ["left", "top", "right"] ["do" ...]]
-["def", "drawTriangle", ["fn", ["left", "top", "right"] ["do" ...]]]
